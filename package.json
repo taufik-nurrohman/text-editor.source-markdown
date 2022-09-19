@@ -1,0 +1,59 @@
+{
+  "author": "Taufik Nurrohman",
+  "browser": "index.min.js",
+  "bugs": "https://github.com/taufik-nurrohman/text-editor.source-markdown/issues",
+  "dependencies": {
+    "@taufik-nurrohman/from": "*",
+    "@taufik-nurrohman/key": "*",
+    "@taufik-nurrohman/pattern": "*",
+    "@taufik-nurrohman/text-editor": "*",
+    "@taufik-nurrohman/text-editor.history": "*",
+    "@taufik-nurrohman/text-editor.source": "*",
+    "@taufik-nurrohman/text-editor.source-h-t-m-l": "*",
+    "@taufik-nurrohman/text-editor.source-x-m-l": "*",
+    "@taufik-nurrohman/to": "*"
+  },
+  "description": "Provides a set of key strokes to generate responses like in a typical Markdown source code editor.",
+  "devDependencies": {
+    "@taufik-nurrohman/factory": "*"
+  },
+  "exports": {
+    "import": "./index.mjs",
+    "require": "./index.js"
+  },
+  "files": [
+    "index.js",
+    "index.min.js",
+    "index.mjs"
+  ],
+  "funding": {
+    "url": "https://paypal.me/tatautaufik"
+  },
+  "homepage": "https://taufik-nurrohman.js.org/text-editor",
+  "keywords": [
+    "code",
+    "editor",
+    "extension",
+    "html",
+    "ide",
+    "markdown",
+    "markup",
+    "range",
+    "selection",
+    "source",
+    "text",
+    "xml"
+  ],
+  "license": "MIT",
+  "main": "index.js",
+  "module": "index.mjs",
+  "name": "@taufik-nurrohman/text-editor.source-markdown",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/taufik-nurrohman/text-editor.source-markdown.git"
+  },
+  "scripts": {
+    "pack": "pack --clean=false --from=.github/factory --js-format=umd --js-name=TE.SourceHTML --js-top='%(js.license)' --mjs=true --to=."
+  },
+  "version": "0.0.1"
+}
