@@ -53,7 +53,7 @@
     "url": "git+https://github.com/taufik-nurrohman/text-editor.source-markdown.git"
   },
   "scripts": {
-    "pack": "pack --clean=false --from=.github/factory --js-format=umd --js-name=TE.SourceHTML --js-top='%(js.license)' --mjs=true --to=."
+    "pack": "pack --clean=false --from=.github/factory --js-format=umd --js-name=TE.SourceMarkdown --js-top='%(js.license)' --mjs=true --to=."
   },
   "version": "0.0.1"
 }

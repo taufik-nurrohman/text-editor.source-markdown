@@ -87,7 +87,7 @@
   <body>
     <header>
       <h1>Text Editor Source Markdown 0.0.1</h1>
-      <p>HTML source code editor extension for <a href="../text-editor/index.html">text editor</a>.</p>
+      <p>Markdown source code editor extension for <a href="../text-editor/index.html">text editor</a>.</p>
       <hr>
       <p>Provides a set of key strokes to generate responses like in a typical <abbr title="Hyper Text Markup Language">HTML</abbr> source code editor.</p>
     </header>
@@ -95,7 +95,7 @@
       <p tabindex="0">Previous tabbable element.</p>
       <p><textarea placeholder="Code goes here&hellip;" spellcheck="false"></textarea></p>
       <p><button onclick="map.commands.bold.call(editor);">Bold</button> <button onclick="map.commands.italic.call(editor);">Italic</button> <button onclick="map.commands.blocks.call(editor);">Blocks</button> <button onclick="map.commands.quote.call(editor);">Quote</button> <button onclick="map.commands.code.call(editor);">Code</button> <button onclick="map.commands.link.call(editor);">Link</button> <button onclick="map.commands.image.call(editor);">Image</button> <button onclick="editor.undo();">Undo</button> <button onclick="editor.redo();">Redo</button> <code id="log"></code></p>
-      <p><label><input checked onchange="this.checked ? setEditor() : letEditor();" type="checkbox"> <span>Enable HTML Source Editor</span></label></p>
+      <p><label><input checked onchange="this.checked ? setEditor() : letEditor();" type="checkbox"> <span>Enable Markdown Source Editor</span></label></p>
       <h2>Features</h2>
       <ul>
         <li>Press <kbd>⎈</kbd><kbd>b</kbd>.</li>
@@ -129,9 +129,10 @@
   map.keys['Control-e'] = 'code';
   map.keys['Control-h'] = 'blocks';
   map.keys['Control-i'] = 'italic';
-  map.keys['Control-k'] = 'link';
+  map.keys['Control-l'] = 'link';
   map.keys['Control-o'] = 'image';
   map.keys['Control-q'] = 'quote';
+  map.keys['Control-Shift-Q'] = 'quote'; // Use `Control-Shift-Q` if `Control-q` closes the window
 
   const {
       canKeyDown: canKeyDownSource,
@@ -260,9 +261,10 @@ map.keys['Control-b'] = 'bold';
 map.keys['Control-e'] = 'code';
 map.keys['Control-h'] = 'blocks';
 map.keys['Control-i'] = 'italic';
-map.keys['Control-k'] = 'link';
+map.keys['Control-l'] = 'link';
 map.keys['Control-o'] = 'image';
 map.keys['Control-q'] = 'quote';
+map.keys['Control-Shift-Q'] = 'quote'; // Use `Control-Shift-Q` if `Control-q` closes the window
 
 editor.state = fromStates({}, editor.state, stateSource, stateSourceXML, stateSourceHTML, stateSourceMarkdown, {
     commands: map.commands,
@@ -363,9 +365,10 @@ map.keys['Control-b'] = 'bold';
 map.keys['Control-e'] = 'code';
 map.keys['Control-h'] = 'blocks';
 map.keys['Control-i'] = 'italic';
-map.keys['Control-k'] = 'link';
+map.keys['Control-l'] = 'link';
 map.keys['Control-o'] = 'image';
 map.keys['Control-q'] = 'quote';
+map.keys['Control-Shift-Q'] = 'quote'; // Use `Control-Shift-Q` if `Control-q` closes the window
 
 editor.state = fromStates({}, editor.state, stateSource, stateSourceXML, stateSourceHTML, stateSourceMarkdown, {
     commands: map.commands,
@@ -427,7 +430,7 @@ editor.record(); // Record the first history data!</code></pre>
     </main>
     <footer>
       <hr>
-      <p>&copy; 2022 <a href="/">Taufik Nurrohman</a></p>
+      <p>&copy; 2023 <a href="/">Taufik Nurrohman</a></p>
     </footer>
     <script src="../key/index.min.js"></script>
     <script src="../text-editor/index.min.js"></script>
@@ -435,7 +438,7 @@ editor.record(); // Record the first history data!</code></pre>
     <script src="../text-editor.source/index.min.js"></script>
     <script src="../text-editor.source-x-m-l/index.min.js"></script>
     <script src="../text-editor.source-h-t-m-l/index.min.js"></script>
-    <script src="index.min.js"></script>
+    <script src="index.js"></script>
     <script>
       Object.assign(TE.prototype, TE.History.that, TE.Source.that);
       let editor = new TE(document.querySelector('textarea'), '  '),
@@ -462,11 +465,12 @@ editor.record(); // Record the first history data!</code></pre>
               commands: commandsSourceMarkdown
           } = TE.SourceMarkdown;
       Object.assign(map.commands, commandsSourceHTML, commandsSourceMarkdown);
+      map.keys['Control-Shift-Q'] = 'quote'; // Use `Control-Shift-Q` if `Control-q` closes the window
       map.keys['Control-b'] = 'bold';
       map.keys['Control-e'] = 'code';
       map.keys['Control-h'] = 'blocks';
       map.keys['Control-i'] = 'italic';
-      map.keys['Control-k'] = 'link';
+      map.keys['Control-l'] = 'link';
       map.keys['Control-o'] = 'image';
       map.keys['Control-q'] = 'quote';
       editor.state = Object.assign({}, editor.state, TE.Source.state, TE.SourceXML.state, TE.SourceHTML.state, TE.SourceMarkdown.state);

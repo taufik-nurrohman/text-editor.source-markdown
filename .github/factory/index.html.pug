@@ -2,7 +2,7 @@ extends _index.pug
 
 block state
   - const title = 'Text Editor Source Markdown ' + version
-  - const scripts = ['../key/index.min.js', '../text-editor/index.min.js', '../text-editor.history/index.min.js', '../text-editor.source/index.min.js', '../text-editor.source-x-m-l/index.min.js', '../text-editor.source-h-t-m-l/index.min.js', 'index.min.js']
+  - const scripts = ['../key/index.min.js', '../text-editor/index.min.js', '../text-editor.history/index.min.js', '../text-editor.source/index.min.js', '../text-editor.source-x-m-l/index.min.js', '../text-editor.source-h-t-m-l/index.min.js', 'index.js']
 
 block script
   script
@@ -18,11 +18,12 @@ block script
     |
     | Object.assign(map.commands, commandsSourceHTML, commandsSourceMarkdown);
     |
+    | map.keys['Control-Shift-Q'] = 'quote'; // Use `Control-Shift-Q` if `Control-q` closes the window
     | map.keys['Control-b'] = 'bold';
     | map.keys['Control-e'] = 'code';
     | map.keys['Control-h'] = 'blocks';
     | map.keys['Control-i'] = 'italic';
-    | map.keys['Control-k'] = 'link';
+    | map.keys['Control-l'] = 'link';
     | map.keys['Control-o'] = 'image';
     | map.keys['Control-q'] = 'quote';
     |
@@ -181,7 +182,7 @@ block style
 block content
   header
     h1= title
-    p HTML source code editor extension for #[a(href='../text-editor/index.html') text editor].
+    p Markdown source code editor extension for #[a(href='../text-editor/index.html') text editor].
     hr
     p Provides a set of key strokes to generate responses like in a typical #[abbr(title='Hyper Text Markup Language') HTML] source code editor.
   main
@@ -211,7 +212,7 @@ block content
       label
         input(checked onchange='this.checked ? setEditor() : letEditor();' type='checkbox')
         = ' '
-        span Enable HTML Source Editor
+        span Enable Markdown Source Editor
     h2 Features
     ul
       li Press <kbd>⎈</kbd><kbd>b</kbd>.
@@ -245,9 +246,10 @@ block content
       |   map.keys['Control-e'] = 'code';
       |   map.keys['Control-h'] = 'blocks';
       |   map.keys['Control-i'] = 'italic';
-      |   map.keys['Control-k'] = 'link';
+      |   map.keys['Control-l'] = 'link';
       |   map.keys['Control-o'] = 'image';
       |   map.keys['Control-q'] = 'quote';
+      |   map.keys['Control-Shift-Q'] = 'quote'; // Use `Control-Shift-Q` if `Control-q` closes the window
       |
       |   const {
       |       canKeyDown: canKeyDownSource,
@@ -377,9 +379,10 @@ block content
       | map.keys['Control-e'] = 'code';
       | map.keys['Control-h'] = 'blocks';
       | map.keys['Control-i'] = 'italic';
-      | map.keys['Control-k'] = 'link';
+      | map.keys['Control-l'] = 'link';
       | map.keys['Control-o'] = 'image';
       | map.keys['Control-q'] = 'quote';
+      | map.keys['Control-Shift-Q'] = 'quote'; // Use `Control-Shift-Q` if `Control-q` closes the window
       |
       | editor.state = fromStates({}, editor.state, stateSource, stateSourceXML, stateSourceHTML, stateSourceMarkdown, {
       |     commands: map.commands,
@@ -481,9 +484,10 @@ block content
       | map.keys['Control-e'] = 'code';
       | map.keys['Control-h'] = 'blocks';
       | map.keys['Control-i'] = 'italic';
-      | map.keys['Control-k'] = 'link';
+      | map.keys['Control-l'] = 'link';
       | map.keys['Control-o'] = 'image';
       | map.keys['Control-q'] = 'quote';
+      | map.keys['Control-Shift-Q'] = 'quote'; // Use `Control-Shift-Q` if `Control-q` closes the window
       |
       | editor.state = fromStates({}, editor.state, stateSource, stateSourceXML, stateSourceHTML, stateSourceMarkdown, {
       |     commands: map.commands,

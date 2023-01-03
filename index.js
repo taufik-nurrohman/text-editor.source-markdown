@@ -2,7 +2,7 @@
  *
  * The MIT License (MIT)
  *
- * Copyright © 2022 Taufik Nurrohman <https://github.com/taufik-nurrohman>
+ * Copyright © 2023 Taufik Nurrohman <https://github.com/taufik-nurrohman>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the “Software”), to deal
@@ -24,7 +24,7 @@
  *
  */
 (function(global, factory) {
-    typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports) : typeof define === 'function' && define.amd ? define(['exports'], factory) : (global = typeof globalThis !== 'undefined' ? globalThis : global || self, factory((global.TE = global.TE || {}, global.TE.SourceHTML = {})));
+    typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports) : typeof define === 'function' && define.amd ? define(['exports'], factory) : (global = typeof globalThis !== 'undefined' ? globalThis : global || self, factory((global.TE = global.TE || {}, global.TE.SourceMarkdown = {})));
 })(this, function(exports) {
     'use strict';
     var hasValue = function hasValue(x, data) {
@@ -60,7 +60,19 @@
     var isString = function isString(x) {
         return 'string' === typeof x;
     };
-    var toCount = function toCount(x) {
+    var W = window;
+    var theLocation = W.location;
+    var isPattern = function isPattern(pattern) {
+        return isInstance(pattern, RegExp);
+    };
+    var toPattern = function toPattern(pattern, opt) {
+        if (isPattern(pattern)) {
+            return pattern;
+        } // No need to escape `/` in the pattern string
+        pattern = pattern.replace(/\//g, '\\/');
+        return new RegExp(pattern, isSet$1(opt) ? opt : 'g');
+    };
+    var toCount$1 = function toCount(x) {
         return x.length;
     };
     var fromStates = function fromStates() {
@@ -68,7 +80,7 @@
             lot[_key] = arguments[_key];
         }
         var out = lot.shift();
-        for (var i = 0, j = toCount(lot); i < j; ++i) {
+        for (var i = 0, j = toCount$1(lot); i < j; ++i) {
             for (var k in lot[i]) {
                 // Assign value
                 if (!isSet$1(out[k])) {
@@ -79,7 +91,7 @@
                     out[k] = [
                         /* Clone! */
                     ].concat(out[k]);
-                    for (var ii = 0, jj = toCount(lot[i][k]); ii < jj; ++ii) {
+                    for (var ii = 0, jj = toCount$1(lot[i][k]); ii < jj; ++ii) {
                         if (!hasValue(lot[i][k][ii], out[k])) {
                             out[k].push(lot[i][k][ii]);
                         }
@@ -95,17 +107,8 @@
         }
         return out;
     };
-    var W = window;
-    var theLocation = W.location;
-    var isPattern = function isPattern(pattern) {
-        return isInstance(pattern, RegExp);
-    };
-    var toPattern = function toPattern(pattern, opt) {
-        if (isPattern(pattern)) {
-            return pattern;
-        } // No need to escape `/` in the pattern string
-        pattern = pattern.replace(/\//g, '\\/');
-        return new RegExp(pattern, isSet$1(opt) ? opt : 'g');
+    var toCount = function toCount(x) {
+        return x.length;
     };
     var pairs = {
         '`': '`',
@@ -175,8 +178,12 @@
         },
         sourceMarkdown: {
             b: '**',
-            h1: '===',
-            h2: '---',
+            h1: '=',
+            h2: '-',
+            h3: '### ',
+            h4: '#### ',
+            h5: '##### ',
+            h6: '###### ',
             i: '_',
             pre: '~~~'
         }
@@ -188,96 +195,60 @@
         tagStart = name => '<(' + name + ')(\\s(?:\'(?:\\\\.|[^\'])*\'|"(?:\\\\.|[^"])*"|[^/>\'"])*)?>',
         tagEnd = name => '</(' + name + ')>';
 
-    function toTidy(tidy) {
-        if (false !== tidy) {
-            if (isString(tidy)) {
-                tidy = [tidy, tidy];
-            } else if (!isArray(tidy)) {
-                tidy = ["", ""];
-            }
-            if (!isSet$1(tidy[1])) {
-                tidy[1] = tidy[0];
+    function toggleBlocks(that) {
+        let {
+            after,
+            end,
+            before,
+            start,
+            value
+        } = that.$(),
+            h = 0,
+            patternAfter,
+            patternBefore,
+            patternValue;
+        that.state.sourceMarkdown;
+        let m; // Wrap current line if selection is empty
+        if (!value) {
+            let lineAfter = after.split('\n').shift(),
+                lineBefore = before.split('\n').pop();
+            that.select(start - toCount$1(lineBefore), end + toCount$1(lineAfter)).trim('\n\n', '\n\n');
+            value = that.$().value;
+        }
+        if (m = (patternBefore = toPattern('(^|\\n)([#]{1,6})[ ]+$')).exec(before)) {
+            h = toCount$1(m[2]);
+            that.replace(patternBefore, '$1', -1);
+            value = that.$().value;
+        }
+        if (m = (patternValue = toPattern('^([#]{1,6})[ ]+')).exec(value)) {
+            h = toCount$1(m[1]);
+            that.replace(patternValue, "");
+            value = that.$().value;
+        }
+        if (m = (patternAfter = toPattern('\\n([-]+|[=]+)(\\n|$)')).exec(after)) {
+            h = '=' === m[1][0] ? 1 : 2;
+            that.replace(patternAfter, '$2', 1);
+            value = that.$().value;
+        }
+        if (m = (patternValue = toPattern('^([^\\n]+)\\n([-]+|[=]+)$')).exec(value)) {
+            h = '=' === m[2][0] ? 1 : 2;
+            that.replace(patternValue, '$1');
+            value = that.$().value;
+        }
+        if (!h) {
+            that.trim('\n\n', '\n\n').wrap("", '\n' + '='.repeat(toCount$1(value)));
+            ++h;
+        } else {
+            if (1 === h) {
+                that.wrap("", '\n' + '-'.repeat(toCount$1(value)));
+                ++h;
+            } else if (h < 6) {
+                that.wrap('#'.repeat(h + 1) + ' ', "");
+                ++h;
+            } else {
+                h = 0;
             }
         }
-        return tidy; // Return `[…]` or `false`
-    }
-
-    function toggleBlocks(that) {
-        let patternBefore = /<(?:h([1-6])|p)(\s[^>]*)?>$/,
-            patternAfter = /^<\/(?:h[1-6]|p)>/;
-        that.match([patternBefore, /.*/, patternAfter], function(before, value, after) {
-            let t = this,
-                h = +(before[1] || 0),
-                attr = before[2] || "",
-                elements = that.state.sourceMarkdown.elements || {},
-                element = before[0] ? elements[before[0].slice(1, -1).split(/\s/)[0]] : ["", "", {}];
-            if (!attr && element[2]) {
-                attr = toAttributes(element[2]);
-            } // ``
-            t.replace(patternBefore, "", -1);
-            t.replace(/\n+/g, ' ');
-            t.replace(patternAfter, "", 1);
-            let tidy = element[3] || elements.h1[3];
-            if (false !== (tidy = toTidy(tidy))) {
-                t.trim(tidy[0], tidy[1]);
-            }
-            if (!h) {
-                // `<h1>`
-                t.wrap('<' + elements.h1[0] + (attr || toAttributes(elements.h1[2])) + '>', '</' + elements.h1[0] + '>');
-                if (!value[0] || value[0] === elements.p[1]) {
-                    t.insert(elements.h1[1]);
-                }
-            } else {
-                ++h;
-                if (h > 6) {
-                    // `<p>`
-                    t.wrap('<' + elements.p[0] + (attr || toAttributes(elements.p[2])) + '>', '</' + elements.p[0] + '>');
-                    if (!value[0] || value[0] === elements.h6[1]) {
-                        t.insert(elements.p[1]);
-                    }
-                } else {
-                    // `<h1>`, `<h2>`, `<h3>`, `<h4>`, `<h5>`, `<h6>`
-                    t.wrap('<' + elements['h' + h][0] + (attr || toAttributes(elements['h' + h][2])) + '>', '</' + elements['h' + h][0] + '>');
-                    if (!value[0] || value[0] === elements.p[1]) {
-                        t.insert(elements['h' + h][1]);
-                    }
-                }
-            }
-        });
-    }
-
-    function toggleQuotes(that) {
-        let patternBefore = /<(blockquote|q)(?:\s[^>]*)?>\s*$/,
-            patternAfter = /^\s*<\/(blockquote|q)>/;
-        that.match([patternBefore, /.*/, patternAfter], function(before, value, after) {
-            let t = this,
-                tidy,
-                state = that.state,
-                charIndent = state.sourceMarkdown.tab || state.source.tab || state.tab || '\t',
-                elements = that.state.sourceMarkdown.elements || {}; // ``
-            t.replace(patternBefore, "", -1);
-            t.replace(patternAfter, "", 1);
-            if (after[0]) {
-                // ``
-                if (elements.blockquote[0] === after[1]) {
-                    if (false !== (tidy = toTidy(elements[""][3]))) {
-                        t.trim(tidy[0], tidy[1]);
-                    } // `<blockquote>…</blockquote>`
-                } else if (elements.q[0] === after[1]) {
-                    if (false !== (tidy = toTidy(elements.blockquote[3]))) {
-                        t.trim(tidy[0], tidy[1]);
-                    }
-                    t.wrap('<' + elements.blockquote[0] + toAttributes(elements.blockquote[2]) + '>\n', '\n</' + elements.blockquote[0] + '>').insert(value[0] || elements.blockquote[1]);
-                    t.replace(toPattern('(^|\\n)'), '$1' + charIndent);
-                } // `<q>…</q>`
-            } else {
-                if (false !== (tidy = toTidy(elements.q[3]))) {
-                    t.trim(tidy[0], tidy[1]);
-                }
-                t.wrap('<' + elements.q[0] + toAttributes(elements.q[2]) + '>', '</' + elements.q[0] + '>').insert(value[0] || elements.q[1]);
-                t.replace(toPattern('(^|\\n)' + charIndent), '$1');
-            }
-        });
     }
     const commands = {};
     commands.blocks = function() {
@@ -383,7 +354,7 @@
     };
     commands.quote = function() {
         let that = this;
-        return that.record(), toggleQuotes(that), that.record(), false;
+        return that.record(), that.record(), false;
     };
 
     function canKeyDown(map, that) {
@@ -410,7 +381,7 @@
                 let m = lineAfter.match(toPattern(tagEnd(tagName) + '\\s*$', "")),
                     element = elements[m && m[1] || 'p'] || elements.p;
                 element[3] = ['\n' + lineMatchIndent, '\n' + lineMatchIndent];
-                that.select(queue.Shift ? start - toCount(lineBefore) : end + toCount(lineAfter));
+                that.select(queue.Shift ? start - toCount$1(lineBefore) : end + toCount$1(lineAfter));
                 toggle.apply(that, element);
                 return that.record(), false;
             }
@@ -483,7 +454,7 @@
                 return that.insert('<' + br[0] + toAttributes(br[2]) + '>' + (false === br[1] ? "" : br[1] + '</' + br[0] + '>') + '\n', -1).record(), false;
             }
             if (after && before) {
-                for (let i = 0, j = toCount(continueOnEnterTags); i < j; ++i) {
+                for (let i = 0, j = toCount$1(continueOnEnterTags); i < j; ++i) {
                     n = continueOnEnterTags[i];
                     if (toPattern('^' + tagEnd(n), "").test(lineAfter) && (m = lineBefore.match(toPattern('^\\s*' + tagStart(n), "")))) {
                         // `<foo>|</foo>`
@@ -498,7 +469,7 @@
                         return that.insert('</' + n + '>\n' + lineMatchIndent + '<' + n + (m[2] || "") + '>', -1).insert(elements[n] ? elements[n][1] || "" : "").record(), false;
                     }
                 }
-                for (let i = 0, j = toCount(noIndentOnEnterTags); i < j; ++i) {
+                for (let i = 0, j = toCount$1(noIndentOnEnterTags); i < j; ++i) {
                     n = noIndentOnEnterTags[i];
                     if (toPattern('^' + tagEnd(n), "").test(lineAfter) && toPattern(tagStart(n) + '$', "").test(lineBefore)) {
                         return that.wrap('\n' + lineMatchIndent, '\n' + lineMatchIndent).insert(elements[n] ? elements[n][1] || "" : "").record(), false;

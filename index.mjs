@@ -5,6 +5,8 @@ import {isArray, isFunction, isSet, isString} from '@taufik-nurrohman/is';
 import {that} from '@taufik-nurrohman/text-editor.source';
 import {toCount} from '@taufik-nurrohman/to';
 
+import TE from '@taufik-nurrohman/text-editor';
+
 const protocol = theLocation.protocol;
 
 const defaults = {
@@ -13,8 +15,12 @@ const defaults = {
     },
     sourceMarkdown: {
         b: '**',
-        h1: '===',
-        h2: '---',
+        h1: '=',
+        h2: '-',
+        h3: '### ',
+        h4: '#### ',
+        h5: '##### ',
+        h6: '###### ',
         i: '_',
         pre: '~~~'
     }
@@ -28,144 +34,60 @@ let tagComment = '<!--([\\s\\S](?!-->)*)-->',
     tagEnd = name => '</(' + name + ')>',
     tagVoid = name => '<(' + name + ')(\\s(?:\'(?:\\\\.|[^\'])*\'|"(?:\\\\.|[^"])*"|[^/>\'"])*)?/?>';
 
-function toTidy(tidy) {
-    if (false !== tidy) {
-        if (isString(tidy)) {
-            tidy = [tidy, tidy];
-        } else if (!isArray(tidy)) {
-            tidy = ["", ""];
-        }
-        if (!isSet(tidy[1])) {
-            tidy[1] = tidy[0];
+function toggleBlocks(that) {
+    let {esc} = TE;
+    let {after, end, before, start, value} = that.$(),
+        h = 0,
+        patternAfter,
+        patternBefore,
+        patternValue,
+        state = that.state.sourceMarkdown, m;
+    // Wrap current line if selection is empty
+    if (!value) {
+        let lineAfter = after.split('\n').shift(),
+            lineBefore = before.split('\n').pop();
+        that.select(start - toCount(lineBefore), end + toCount(lineAfter)).trim('\n\n', '\n\n');
+        value = that.$().value;
+    }
+    if (m = (patternBefore = toPattern('(^|\\n)([#]{1,6})[ ]+$')).exec(before)) {
+        h = toCount(m[2]);
+        that.replace(patternBefore, '$1', -1);
+        value = that.$().value;
+    }
+    if (m = (patternValue = toPattern('^([#]{1,6})[ ]+')).exec(value)) {
+        h = toCount(m[1]);
+        that.replace(patternValue, "");
+        value = that.$().value;
+    }
+    if (m = (patternAfter = toPattern('\\n([-]+|[=]+)(\\n|$)')).exec(after)) {
+        h = '=' === m[1][0] ? 1 : 2;
+        that.replace(patternAfter, '$2', 1);
+        value = that.$().value;
+    }
+    if (m = (patternValue = toPattern('^([^\\n]+)\\n([-]+|[=]+)$')).exec(value)) {
+        h = '=' === m[2][0] ? 1 : 2;
+        that.replace(patternValue, '$1');
+        value = that.$().value;
+    }
+    if (!h) {
+        that.trim('\n\n', '\n\n').wrap("", '\n' + '='.repeat(toCount(value)));
+        ++h;
+    } else {
+        if (1 === h) {
+            that.wrap("", '\n' + '-'.repeat(toCount(value)));
+            ++h;
+        } else if (h < 6) {
+            that.wrap('#'.repeat(h + 1) + ' ', "");
+            ++h;
+        } else {
+            h = 0;
         }
     }
-    return tidy; // Return `[…]` or `false`
 }
 
-function toggleBlocks(that) {
-    let patternBefore = /<(?:h([1-6])|p)(\s[^>]*)?>$/,
-        patternAfter = /^<\/(?:h[1-6]|p)>/;
-    that.match([patternBefore, /.*/, patternAfter], function (before, value, after) {
-        let t = this,
-            h = +(before[1] || 0),
-            attr = before[2] || "",
-            elements = that.state.sourceMarkdown.elements || {},
-            element = before[0] ? elements[before[0].slice(1, -1).split(/\s/)[0]] : ["", "", {}];
-        if (!attr && element[2]) {
-            attr = toAttributes(element[2]);
-        }
-        // ``
-        t.replace(patternBefore, "", -1);
-        t.replace(/\n+/g, ' ');
-        t.replace(patternAfter, "", 1);
-        let tidy = element[3] || elements.h1[3];
-        if (false !== (tidy = toTidy(tidy))) {
-            t.trim(tidy[0], tidy[1]);
-        }
-        if (!h) {
-            // `<h1>`
-            t.wrap('<' + elements.h1[0] + (attr || toAttributes(elements.h1[2])) + '>', '</' + elements.h1[0] + '>');
-            if (!value[0] || value[0] === elements.p[1]) {
-                t.insert(elements.h1[1]);
-            }
-        } else {
-            ++h;
-            if (h > 6) {
-                // `<p>`
-                t.wrap('<' + elements.p[0] + (attr || toAttributes(elements.p[2])) + '>', '</' + elements.p[0] + '>');
-                if (!value[0] || value[0] === elements.h6[1]) {
-                    t.insert(elements.p[1]);
-                }
-            } else {
-                // `<h1>`, `<h2>`, `<h3>`, `<h4>`, `<h5>`, `<h6>`
-                t.wrap('<' + elements['h' + h][0] + (attr || toAttributes(elements['h' + h][2])) + '>', '</' + elements['h' + h][0] + '>');
-                if (!value[0] || value[0] === elements.p[1]) {
-                    t.insert(elements['h' + h][1]);
-                }
-            }
-        }
-    });
-}
+function toggleCodes(that) {}
 
-function toggleCodes(that) {
-    let patternBefore = /<(?:pre|code)(?:\s[^>]*)?>(?:\s*<code(?:\s[^>]*)?>)?$/,
-        patternAfter = /^(?:<\/code>\s*)?<\/(?:pre|code)>/;
-    that.match([patternBefore, /.*/, patternAfter], function (before, value, after) {
-        let t = this, tidy,
-            elements = that.state.sourceMarkdown.elements;
-        // ``
-        t.replace(patternBefore, "", -1);
-        t.replace(patternAfter, "", 1);
-        if (after[0]) {
-            // ``
-            if (/^(?:<\/code>\s*)?<\/pre>/.test(after[0])) {
-                tidy = elements[""][3];
-                if (false !== (tidy = toTidy(tidy))) {
-                    t.trim(tidy[0], tidy[1]);
-                }
-                t.insert(decode(value[0]));
-            // `<pre><code>…</code></pre>`
-            } else if (after[0].slice(0, 7) === '</' + elements.code[0] + '>') {
-                tidy = elements.pre[3];
-                if (false !== (tidy = toTidy(tidy))) {
-                    t.trim(tidy[0], tidy[1]);
-                }
-                t.wrap('<' + elements.pre[0] + toAttributes(elements.pre[2]) + '><' + elements.code[0] + toAttributes(elements.code[2]) + '>', '</' + elements.code[0] + '></' + elements.pre[0] + '>');
-            }
-        // `<code>…</code>`
-        } else {
-            tidy = elements.code[3];
-            if (false !== (tidy = toTidy(tidy))) {
-                t.trim(tidy[0], tidy[1]);
-            }
-            t.wrap('<' + elements.code[0] + toAttributes(elements.code[2]) + '>', '</' + elements.code[0] + '>').insert(encode(value[0] || elements.code[1]));
-        }
-    });
-}
-
-function toggleQuotes(that) {
-    let patternBefore = /<(blockquote|q)(?:\s[^>]*)?>\s*$/,
-        patternAfter = /^\s*<\/(blockquote|q)>/;
-    that.match([patternBefore, /.*/, patternAfter], function (before, value, after) {
-        let t = this, tidy,
-            state = that.state,
-            charIndent = state.sourceMarkdown.tab || state.source.tab || state.tab || '\t',
-            elements = that.state.sourceMarkdown.elements || {};
-        // ``
-        t.replace(patternBefore, "", -1);
-        t.replace(patternAfter, "", 1);
-        if (after[0]) {
-            // ``
-            if (elements.blockquote[0] === after[1]) {
-                if (false !== (tidy = toTidy(elements[""][3]))) {
-                    t.trim(tidy[0], tidy[1]);
-                }
-            // `<blockquote>…</blockquote>`
-            } else if (elements.q[0] === after[1]) {
-                if (false !== (tidy = toTidy(elements.blockquote[3]))) {
-                    t.trim(tidy[0], tidy[1]);
-                }
-                t.wrap('<' + elements.blockquote[0] + toAttributes(elements.blockquote[2]) + '>\n', '\n</' + elements.blockquote[0] + '>').insert(value[0] || elements.blockquote[1]);
-                t.replace(toPattern('(^|\\n)'), '$1' + charIndent);
-            }
-        // `<q>…</q>`
-        } else {
-            if (false !== (tidy = toTidy(elements.q[3]))) {
-                t.trim(tidy[0], tidy[1]);
-            }
-            t.wrap('<' + elements.q[0] + toAttributes(elements.q[2]) + '>', '</' + elements.q[0] + '>').insert(value[0] || elements.q[1]);
-            t.replace(toPattern('(^|\\n)' + charIndent), '$1');
-        }
-    });
-}
-
-function encode(x) {
-    return x.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-}
-
-function decode(x) {
-    return x.replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&');
-}
+function toggleQuotes(that) {}
 
 export const commands = {};
 
