@@ -477,6 +477,12 @@ editor.record(); // Record the first history data!</code></pre>
           commands: map.commands,
           keys: map.keys
       });
+      editor.state.defaults.h1[1] = 'title level 1 goes here…';
+      editor.state.defaults.h2[1] = 'title level 2 goes here…';
+      editor.state.defaults.h3[1] = 'title level 3 goes here…';
+      editor.state.defaults.h4[1] = 'title level 4 goes here…';
+      editor.state.defaults.h5[1] = 'title level 5 goes here…';
+      editor.state.defaults.h6[1] = 'title level 6 goes here…';
 
       function onBlur() {
           map.pull(); // Reset all!

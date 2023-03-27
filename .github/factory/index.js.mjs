@@ -10,30 +10,7 @@ import TE from '@taufik-nurrohman/text-editor';
 const protocol = theLocation.protocol;
 
 const defaults = {
-    source: {
-        type: 'Markdown'
-    },
-    sourceMarkdown: {
-        defaults: {
-            "": ['text goes here…', {}, ""],
-            a: ['link text goes here…', {}],
-            b: ['text goes here…', {}],
-            blockquote: ['quote goes here…', {}, '\n'],
-            code: ['code goes here…', {}],
-            h1: ['title level 1 goes here…', {}, '\n'],
-            h2: ['title level 2 goes here…', {}, '\n'],
-            h3: ['title level 3 goes here…', {}, '\n'],
-            h4: ['title level 4 goes here…', {}, '\n'],
-            h5: ['title level 5 goes here…', {}, '\n'],
-            h6: ['title level 6 goes here…', {}, '\n'],
-            i: ['text goes here…', {}],
-            img: [false, {alt: 'image text goes here…', src: ""}, ' '],
-            li: ['list item goes here…', {}, '\n'],
-            p: ['paragraph goes here…', {}, '\n'],
-            pre: ['code goes here…', {}, '\n'],
-            td: ['data goes here…', {}, '\n'],
-            th: ['title goes here…', {}, '\n']
-        },
+    markdown: {
         b: '**',
         h1: '=',
         h2: '-',
@@ -43,6 +20,9 @@ const defaults = {
         h6: '###### ',
         i: '_',
         pre: '~~~'
+    },
+    source: {
+        type: 'Markdown'
     }
 };
 
@@ -61,7 +41,7 @@ function toggleBlocks(that) {
         patternAfter,
         patternBefore,
         patternValue,
-        state = that.state.sourceMarkdown || {},
+        state = that.state || {},
         defaults = state.defaults || {}, m;
     // Wrap current line if selection is empty
     if (!value) {
@@ -73,32 +53,32 @@ function toggleBlocks(that) {
     if (m = (patternBefore = toPattern('(^|\\n)([#]{1,6})[ ]+$')).exec(before)) {
         h = toCount(m[2]);
         that.replace(patternBefore, '$1', -1);
-        value = that.$().value || defaults['h' + h][0];
+        value = that.$().value || defaults['h' + h][1];
     }
     if (m = (patternValue = toPattern('^([#]{1,6})[ ]+')).exec(value)) {
         h = toCount(m[1]);
         that.replace(patternValue, "");
-        value = that.$().value || defaults['h' + h][0];
+        value = that.$().value || defaults['h' + h][1];
     }
     if (m = (patternAfter = toPattern('\\n([-]+|[=]+)(\\n|$)')).exec(after)) {
         h = '=' === m[1][0] ? 1 : 2;
         that.replace(patternAfter, '$2', 1);
-        value = that.$().value || defaults['h' + h][0];
+        value = that.$().value || defaults['h' + h][1];
     }
     if (m = (patternValue = toPattern('^([^\\n]+)\\n([-]+|[=]+)$')).exec(value)) {
         h = '=' === m[2][0] ? 1 : 2;
         that.replace(patternValue, '$1');
-        value = that.$().value || defaults['h' + h][0];
+        value = that.$().value || defaults['h' + h][1];
     }
     if (!h) {
-        if (!value || value === defaults.h2[0] || value === defaults.h3[0] || value === defaults.h4[0] || value === defaults.h5[0] || value === defaults.h6[0] || value === defaults.p[0]) {
-            that.insert(value = defaults.h1[0]);
+        if (!value || value === defaults.h1[1] || value === defaults.h2[1] || value === defaults.h3[1] || value === defaults.h4[1] || value === defaults.h5[1] || value === defaults.h6[1] || value === defaults.p[1]) {
+            that.insert(value = defaults.h1[1]);
         }
         that.trim('\n\n', '\n\n').wrap("", '\n' + '='.repeat(toCount(value)));
         ++h;
     } else {
-        if (!value || value === defaults.h1[0] || value === defaults.h2[0] || value === defaults.h3[0] || value === defaults.h4[0] || value === defaults.h5[0] || value === defaults.h6[0] || value === defaults.p[0]) {
-            that.insert(value = defaults[h > 5 ? 'p' : 'h' + (h + 1)][0]);
+        if (!value || value === defaults.h1[1] || value === defaults.h2[1] || value === defaults.h3[1] || value === defaults.h4[1] || value === defaults.h5[1] || value === defaults.h6[1] || value === defaults.p[1]) {
+            that.insert(value = defaults[h > 5 ? 'p' : 'h' + (h + 1)][1]);
         }
         if (1 === h) {
             that.wrap("", '\n' + '-'.repeat(toCount(value)));
@@ -127,39 +107,41 @@ commands.bold = function () {
     let that = this,
         {value} = that.$(),
         state = that.state,
-        markdown = state.sourceMarkdown || {},
-        e = markdown.e || '**';
+        defaults = state.defaults || {},
+        markdown = state.markdown || {},
+        e = markdown.b || '**';
     if (!value) {
-        that.insert(markdown.defaults.b[0]);
+        that.insert(markdown.defaults.b[1]);
     }
-    return that.record(), toggle.apply(that, [e, e, false, markdown.defaults.b[2]]), false;
+    return that.record(), toggle.apply(that, [e, e, false, markdown.defaults.b[3]]), false;
 };
 
 commands.code = function () {
     let that = this,
         {after, before, value} = that.$(),
         state = that.state,
-        markdown = state.sourceMarkdown || {},
+        defaults = state.defaults || {},
+        markdown = state.markdown || {},
         e = markdown.code || '`';
     if (!value) {
-        that.insert(markdown.defaults.code[0]);
+        that.insert(defaults.code[1]);
     }
     if (e === after[0] && e === before.slice(-1)) {
         // Decode
-        that.replace(/`(?=`)/g, "");
+        that.replace(/``/g, '`');
     } else {
         // Encode
-        that.replace(/`(?!=`)/g, '``');
+        that.replace(/`/g, '``');
     }
-    return that.record(), toggle.apply(that, [e, e, false, markdown.defaults.code[2]]), false;
+    return that.record(), toggle.apply(that, [e, e, false, defaults.code[3]]), false;
 };
 
 commands.image = function (label = 'URL:', placeholder) {
     let that = this,
         {after, before, value} = that.$(),
         state = that.state,
-        elements = state.sourceMarkdown.elements || {},
-        charIndent = state.sourceMarkdown.tab || state.source.tab || state.tab || '\t',
+        charIndent = state.source.tab || state.tab || '\t',
+        defaults = state.defaults || {},
         lineBefore = before.split('\n').pop(),
         lineMatch = lineBefore.match(/^(\s+)/),
         lineMatchIndent = lineMatch && lineMatch[1] || "",
@@ -170,7 +152,7 @@ commands.image = function (label = 'URL:', placeholder) {
                 that.focus();
                 return;
             }
-            let element = elements.img;
+            let element = defaults.img;
             if (value) {
                 element[2].alt = value;
                 that.record(); // Record selection
@@ -181,14 +163,14 @@ commands.image = function (label = 'URL:', placeholder) {
             }
             element[2].src = src;
             if ((!after || '\n' === after[0]) && (!before || '\n' === before.slice(-1))) {
-                tidy = elements.figure[3] || false;
+                tidy = defaults.figure[3] || false;
                 if (false !== (tidy = toTidy(tidy))) {
                     that.trim(tidy[0], tidy[1]);
                 }
                 that.insert("");
-                that.wrap(lineMatchIndent + '<' + elements.figure[0] + toAttributes(elements.figure[2]) + '>\n' + lineMatchIndent + charIndent, lineMatchIndent + '\n</' + elements.figure[0] + '>');
+                that.wrap(lineMatchIndent + '<' + defaults.figure[0] + toAttributes(defaults.figure[2]) + '>\n' + lineMatchIndent + charIndent, lineMatchIndent + '\n</' + defaults.figure[0] + '>');
                 that.insert('<' + element[0] + toAttributes(element[2]) + '>\n' + lineMatchIndent + charIndent, -1);
-                that.wrap('<' + elements.figcaption[0] + toAttributes(elements.figcaption[2]) + '>', '</' + elements.figcaption[0] + '>').insert(elements.figcaption[1]);
+                that.wrap('<' + defaults.figcaption[0] + toAttributes(defaults.figcaption[2]) + '>', '</' + defaults.figcaption[0] + '>').insert(defaults.figcaption[1]);
             } else {
                 that.insert('<' + element[0] + toAttributes(element[2]) + '>' + (false !== tidy ? tidy[1] : ""), -1, true);
             }
@@ -201,19 +183,20 @@ commands.italic = function () {
     let that = this,
         {value} = that.$(),
         state = that.state,
-        markdown = state.sourceMarkdown || {},
+        defaults = state.defaults || {},
+        markdown = state.markdown || {},
         e = markdown.i || '_';
     if (!value) {
-        that.insert(markdown.defaults.i[0]);
+        that.insert(markdown.defaults.i[1]);
     }
-    return that.record(), toggle.apply(that, [e, e, false, markdown.defaults.i[2]]), false;
+    return that.record(), toggle.apply(that, [e, e, false, defaults.i[3]]), false;
 };
 
 commands.link = function (label = 'URL:', placeholder) {
     let that = this,
         {value} = that.$(),
         state = that.state,
-        elements = state.sourceMarkdown.elements || {},
+        defaults = state.defaults || {},
         prompt = state.source.prompt;
     if (isFunction(prompt)) {
         prompt(label, value && /^https?:\/\/\S+$/.test(value) ? value : (placeholder || protocol + '//')).then(href => {
@@ -221,7 +204,7 @@ commands.link = function (label = 'URL:', placeholder) {
                 that.focus();
                 return;
             }
-            let element = elements.a;
+            let element = defaults.a;
             if (value) {
                 that.record(); // Record selection
             }
@@ -252,8 +235,8 @@ export function canKeyDown(map, that) {
     let state = that.state,
         charAfter,
         charBefore,
-        charIndent = state.sourceMarkdown.tab || state.source.tab || state.tab || '\t',
-        elements = state.sourceMarkdown.elements || {},
+        charIndent = state.source.tab || state.tab || '\t',
+        defaults = state.defaults || {},
         {key, queue} = map;
     if (queue.Control) {
         let {after, before, end, start, value} = that.$(),
@@ -263,7 +246,7 @@ export function canKeyDown(map, that) {
             lineMatchIndent = lineMatch && lineMatch[1] || "", m;
         if ('Enter' === key) {
             let m = lineAfter.match(toPattern(tagEnd(tagName) + '\\s*$', "")), n,
-                element = elements[n = m && m[1] || 'p'] || elements.p;
+                element = defaults[n = m && m[1] || 'p'] || defaults.p;
             element[3] = ['\n' + lineMatchIndent, '\n' + lineMatchIndent];
             that.select(queue.Shift ? start - toCount(lineBefore) : end + toCount(lineAfter));
             toggle.apply(that, element);
@@ -278,7 +261,7 @@ export function canKeyDown(map, that) {
         let {after, before, end} = that.$(),
             lineBefore = before.split('\n').pop(),
             m = (lineBefore + '>').match(toPattern(tagStart(tagName) + '$', "")), n,
-            element = elements[n = m && m[1] || ""];
+            element = defaults[n = m && m[1] || ""];
         if (!n) {
             return true;
         }
@@ -316,14 +299,14 @@ export function canKeyDown(map, that) {
         let continueOnEnterTags = ['li', 'option', 'p', 'td', 'th'],
             noIndentOnEnterTags = ['script', 'style'];
         if (m = lineBefore.match(toPattern(tagStart(tagName) + '$', ""))) {
-            let element = elements[m[1]];
+            let element = defaults[m[1]];
             if (element && false === element[1]) {
                 return that.insert('\n' + lineMatchIndent, -1).record(), false;
             }
         }
         // `<br>`
         if (queue.Shift) {
-            let {br} = elements;
+            let {br} = defaults;
             return that.insert('<' + br[0] + toAttributes(br[2]) + '>' + (false === br[1] ? "" : br[1] + '</' + br[0] + '>') + '\n', -1).record(), false;
         }
         if (after && before) {
@@ -332,7 +315,7 @@ export function canKeyDown(map, that) {
                 if (toPattern('^' + tagEnd(n), "").test(lineAfter) && (m = lineBefore.match(toPattern('^\\s*' + tagStart(n), "")))) {
                     // `<foo>|</foo>`
                     if (m[0] === lineBefore) {
-                        if (elements[n] && value && elements[n][1] === value) {
+                        if (defaults[n] && value && defaults[n][1] === value) {
                             that.insert("").wrap('\n' + lineMatchIndent + charIndent, '\n' + lineMatchIndent);
                         // Unwrap if empty!
                         } else {
@@ -341,22 +324,22 @@ export function canKeyDown(map, that) {
                         return that.record(), false;
                     }
                     // `<foo>bar|</foo>`
-                    return that.insert('</' + n + '>\n' + lineMatchIndent + '<' + n + (m[2] || "") + '>', -1).insert(elements[n] ? (elements[n][1] || "") : "").record(), false;
+                    return that.insert('</' + n + '>\n' + lineMatchIndent + '<' + n + (m[2] || "") + '>', -1).insert(defaults[n] ? (defaults[n][1] || "") : "").record(), false;
                 }
             }
             for (let i = 0, j = toCount(noIndentOnEnterTags); i < j; ++i) {
                 n = noIndentOnEnterTags[i];
                 if (toPattern('^' + tagEnd(n), "").test(lineAfter) && toPattern(tagStart(n) + '$', "").test(lineBefore)) {
-                    return that.wrap('\n' + lineMatchIndent, '\n' + lineMatchIndent).insert(elements[n] ? (elements[n][1] || "") : "").record(), false;
+                    return that.wrap('\n' + lineMatchIndent, '\n' + lineMatchIndent).insert(defaults[n] ? (defaults[n][1] || "") : "").record(), false;
                 }
             }
             for (let i = 1; i < 7; ++i) {
-                if (lineAfter.startsWith('</' + elements['h' + i][0] + '>') && lineBefore.match(toPattern('^\\s*' + tagStart(elements['h' + i][0]), ""))) {
-                    if (elements['h' + i] && value && elements['h' + i][1] === value) {
+                if (lineAfter.startsWith('</' + defaults['h' + i][0] + '>') && lineBefore.match(toPattern('^\\s*' + tagStart(defaults['h' + i][0]), ""))) {
+                    if (defaults['h' + i] && value && defaults['h' + i][1] === value) {
                         that.insert("").wrap('\n' + lineMatchIndent + charIndent, '\n' + lineMatchIndent);
                     // Insert paragraph below!
                     } else {
-                        that.insert('</' + elements['h' + i][0] + '>\n' + lineMatchIndent + '<' + elements.p[0] + '>', -1).replace(toPattern('^' + tagEnd(elements['h' + i][0])), '</' + elements.p[0] + '>', 1).insert(elements.p[1]);
+                        that.insert('</' + defaults['h' + i][0] + '>\n' + lineMatchIndent + '<' + defaults.p[0] + '>', -1).replace(toPattern('^' + tagEnd(defaults['h' + i][0])), '</' + defaults.p[0] + '>', 1).insert(defaults.p[1]);
                     }
                     return that.record(), false;
                 }
