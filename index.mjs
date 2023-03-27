@@ -14,6 +14,26 @@ const defaults = {
         type: 'Markdown'
     },
     sourceMarkdown: {
+        defaults: {
+            "": ['text goes here…', {}, ""],
+            a: ['link text goes here…', {}],
+            b: ['text goes here…', {}],
+            blockquote: ['quote goes here…', {}, '\n'],
+            code: ['code goes here…', {}],
+            h1: ['title level 1 goes here…', {}, '\n'],
+            h2: ['title level 2 goes here…', {}, '\n'],
+            h3: ['title level 3 goes here…', {}, '\n'],
+            h4: ['title level 4 goes here…', {}, '\n'],
+            h5: ['title level 5 goes here…', {}, '\n'],
+            h6: ['title level 6 goes here…', {}, '\n'],
+            i: ['text goes here…', {}],
+            img: [false, {alt: 'image text goes here…', src: ""}, ' '],
+            li: ['list item goes here…', {}, '\n'],
+            p: ['paragraph goes here…', {}, '\n'],
+            pre: ['code goes here…', {}, '\n'],
+            td: ['data goes here…', {}, '\n'],
+            th: ['title goes here…', {}, '\n']
+        },
         b: '**',
         h1: '=',
         h2: '-',
@@ -41,7 +61,8 @@ function toggleBlocks(that) {
         patternAfter,
         patternBefore,
         patternValue,
-        state = that.state.sourceMarkdown, m;
+        state = that.state.sourceMarkdown || {},
+        defaults = state.defaults || {}, m;
     // Wrap current line if selection is empty
     if (!value) {
         let lineAfter = after.split('\n').shift(),
@@ -52,27 +73,33 @@ function toggleBlocks(that) {
     if (m = (patternBefore = toPattern('(^|\\n)([#]{1,6})[ ]+$')).exec(before)) {
         h = toCount(m[2]);
         that.replace(patternBefore, '$1', -1);
-        value = that.$().value;
+        value = that.$().value || defaults['h' + h][0];
     }
     if (m = (patternValue = toPattern('^([#]{1,6})[ ]+')).exec(value)) {
         h = toCount(m[1]);
         that.replace(patternValue, "");
-        value = that.$().value;
+        value = that.$().value || defaults['h' + h][0];
     }
     if (m = (patternAfter = toPattern('\\n([-]+|[=]+)(\\n|$)')).exec(after)) {
         h = '=' === m[1][0] ? 1 : 2;
         that.replace(patternAfter, '$2', 1);
-        value = that.$().value;
+        value = that.$().value || defaults['h' + h][0];
     }
     if (m = (patternValue = toPattern('^([^\\n]+)\\n([-]+|[=]+)$')).exec(value)) {
         h = '=' === m[2][0] ? 1 : 2;
         that.replace(patternValue, '$1');
-        value = that.$().value;
+        value = that.$().value || defaults['h' + h][0];
     }
     if (!h) {
+        if (!value || value === defaults.h2[0] || value === defaults.h3[0] || value === defaults.h4[0] || value === defaults.h5[0] || value === defaults.h6[0] || value === defaults.p[0]) {
+            that.insert(value = defaults.h1[0]);
+        }
         that.trim('\n\n', '\n\n').wrap("", '\n' + '='.repeat(toCount(value)));
         ++h;
     } else {
+        if (!value || value === defaults.h1[0] || value === defaults.h2[0] || value === defaults.h3[0] || value === defaults.h4[0] || value === defaults.h5[0] || value === defaults.h6[0] || value === defaults.p[0]) {
+            that.insert(value = defaults[h > 5 ? 'p' : 'h' + (h + 1)][0]);
+        }
         if (1 === h) {
             that.wrap("", '\n' + '-'.repeat(toCount(value)));
             ++h;
@@ -98,14 +125,33 @@ commands.blocks = function () {
 
 commands.bold = function () {
     let that = this,
+        {value} = that.$(),
         state = that.state,
-        b = state.sourceMarkdown.b || '**';
-    return that.record(), toggle.apply(that, b), false;
+        markdown = state.sourceMarkdown || {},
+        e = markdown.e || '**';
+    if (!value) {
+        that.insert(markdown.defaults.b[0]);
+    }
+    return that.record(), toggle.apply(that, [e, e, false, markdown.defaults.b[2]]), false;
 };
 
 commands.code = function () {
-    let that = this;
-    return that.record(), toggle.apply(that, '`'), false;
+    let that = this,
+        {after, before, value} = that.$(),
+        state = that.state,
+        markdown = state.sourceMarkdown || {},
+        e = markdown.code || '`';
+    if (!value) {
+        that.insert(markdown.defaults.code[0]);
+    }
+    if (e === after[0] && e === before.slice(-1)) {
+        // Decode
+        that.replace(/`(?=`)/g, "");
+    } else {
+        // Encode
+        that.replace(/`(?!=`)/g, '``');
+    }
+    return that.record(), toggle.apply(that, [e, e, false, markdown.defaults.code[2]]), false;
 };
 
 commands.image = function (label = 'URL:', placeholder) {
@@ -153,9 +199,14 @@ commands.image = function (label = 'URL:', placeholder) {
 
 commands.italic = function () {
     let that = this,
+        {value} = that.$(),
         state = that.state,
-        i = state.sourceMarkdown.i || '_';
-    return that.record(), toggle.apply(that, i), false;
+        markdown = state.sourceMarkdown || {},
+        e = markdown.i || '_';
+    if (!value) {
+        that.insert(markdown.defaults.i[0]);
+    }
+    return that.record(), toggle.apply(that, [e, e, false, markdown.defaults.i[2]]), false;
 };
 
 commands.link = function (label = 'URL:', placeholder) {
